@@ -11,10 +11,11 @@ Because of much easier and simplier work with queries and results. Compare:
 
 Dim db as DB = New DB()
 Dim sql as String = "SELECT * FROM table ORDER by id"
-Dim rows as ArrayList = db.array(sql); //db opened automatically based on web.config, errors handled automatically
+Dim rows as ArrayList = db.array(sql); 'db opened automatically based on web.config, errors handled automatically
 For Each row As Hashtable In rows
     'work with row("Field1"), row("Field2")
 Next
+db.disconnect() 'recommended, but not necessary as disconnect happens on db object disposal
 ```
 
 **"native" SqlConnection/SqlCommand/SqlDataReader usage:**
