@@ -46,6 +46,79 @@ The following methods available
 - `check_create_mdb(filepath)` create new MS Access database (TBD remove? is it necessary)
 - `disconnect()` disconnect from currently connected db (optional as disconnect happens on db object disposal)
 
+#### for parametrized sql queries (best practice to prevent sql-injections)
+- `value(table_name, where[, field_name[, order_by]])` get single value from table/where conditions and optional field_name (if not passed - first field value returned)
+- `value(table_name, where, 'count(*)')` get count(\*) from table/where
+- `value(table_name, where, '1')` get "1" if row exists
+```VB.NET
+    Dim name = db.value("users", New Hashtable From {{"id", 1}}, "user_name")
+    Dim ctr = db.value("users", New Hashtable, "count(*)")
+```
+
+- `row(table_name, where[, order_by])` get single row (first row) by table/where and optional order by
+```VB.NET
+    Dim table_name = "items"
+    Dim row = db.row(table_name, New Hashtable From {{"id", 1}})
+    'select * from items where id=1
+
+    Dim where = New Hashtable From {{"status", 0}}
+    Dim row = db.row(table_name, where, "prio desc")
+    'first row from - select * from items where status=0 order by prio desc
+```
+
+- `array(table_name, where[, order_by])` get all rows by table/where and optional order by
+```VB.NET
+    Dim table_name = "items"
+    Dim where = New Hashtable From {{"status", 0}}
+    Dim rows = db.array(table_name, where, "prio desc")
+    'select * from items where status=0 order by prio desc
+    For Each row As Hashtable In rows
+        'work with row("fieldname") values
+    Next
+```
+
+- `col(table_name, where[, field_name[, order_by]])` get all value from table/where conditions and optional field_name (if not passed - first field/column values returned)
+```VB.NET
+    Dim names = db.col("users", New Hashtable From {{"status", 0}}, "user_name", "user_name desc")
+    'select user_name from users where status=0 order by user_name desc
+    For Each name As String In names
+        'work with user name
+    Next
+```
+
+- `insert(table_name, data)` insert new row into db, return last inserted id
+```VB.NET
+    Dim user = New Hashtable From {
+        {"name","John"},
+        {"email","john@email.com"}
+    }
+    Dim id = db.insert("users", user)
+```
+
+- `update(table_name, data, where)` update record by where conditions (AND)
+```VB.NET
+    Dim user = new Hashtable From {
+        {"name","John Smith"}
+    }
+    Dim id = db.update("users", user, New Hashtable From {{"id", 1}})
+```
+
+- `update_or_insert(table_name, data, where)` tries to update, it no records affected - insert new record, retrun number of affected rows
+```VB.NET
+    'assuming email is unique key, so if no record with such email found - new record will be inserted
+    Dim user = new Hashtable From {
+        {"name","John Smith"},
+        {"email","john@email.com"}
+    }
+    db.update_or_insert("users", user, user)
+    Dim id = value("SELECT @@identity")
+```
+
+- `del(table_name, where)` delete record by where conditions (AND)
+```VB.NET
+   db.del("users", New Hashtable From {{"id", 1}})
+```
+
 #### for raw sql queries
 - `query(sql)` run arbitrary sql query and return DbDataReader
 - `exec(sql)` run arbitrary non-select sql query (for inserts, updates...)
@@ -53,21 +126,13 @@ The following methods available
 - `value(sql)` get single value via arbitrary sql
 - `row(sql)` get single row As Hashtable via arbitrary sql
 - `array(sql)` get all rows As ArrayList of Hashtables via arbitrary sql
+```VB.NET
+    Dim rows = db.array("SELECT * FROM users")
+    For Each row As Hashtable In rows
+        'work with row("fieldname") values
+    Next
+```
 - `col(sql)` get all values As ArrayList from first column
-
-#### for parametrized sql queries (better practice)
-- `value(table_name, where[, field_name[, order_by]])` get single value from table/where conditions and optional field_name (if not passed - first field value returned)
-- `value(table_name, where, 'count(*)')` get count(\*) from table/where
-- `value(table_name, where, '1')` get "1" if row exists
-
-- `row(table_name, where[, order_by])` get single row (first row) by table/where and optional order by
-- `array(table_name, where[, order_by])` get all rows by table/where and optional order by
-- `col(table_name, where[, field_name[, order_by]])` get all value from table/where conditions and optional field_name (if not passed - first field/column values returned)
-
-- `insert(table_name, data)` insert new row into db, return last inserted id
-- `update(table_name, data, where)` update record by where conditions (AND)
-- `update_or_insert(table_name, data, where)` tries to update, it no records affected - insert new record
-- `del(table_name, where)` delete record by where conditions (AND)
 
 #### helpers
 - `q(string[, length=0])` quote string - double single quotes and wrap result into single quotes, optionally trim to left `length` chars
